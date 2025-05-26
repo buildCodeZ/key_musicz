@@ -53,7 +53,9 @@ def fetch(keys, as_list = False):
 
 def init(fp):
     conf = xf.loadxf(fp, as_args=True,spc=False)
-    ks, vs, inits= dz.g(conf.dicts, keys=[], vars={}, init={})
+    if isinstance(conf, Args):
+        conf = conf.dicts
+    ks, vs, inits= dz.g(conf, keys=[], vars={}, init={})
     if isinstance(ks, Args):
         ks = ks.as_list(cmb=0, item_args = False, deep=True)
     if isinstance(vs, Args):
