@@ -6,6 +6,7 @@ Codes of this project are not allowed to be used for AI training or any other fo
 
 许可证从之前的项目拷贝的Appache许可证，后面有空找个MIT的换下
 
+```
 键盘按键弹钢琴的小程序
 需要以下C库或资源文件:
     fluidsynth: 读sf2音频文件（里面是各种乐器的按键音），根据指定按键生成音频数据
@@ -38,3 +39,4 @@ buildz:
     
     例：
     python -m key_musicz.run ./FluidR3Mono_GM.sf2
+```
