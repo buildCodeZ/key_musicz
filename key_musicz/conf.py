@@ -51,8 +51,15 @@ def fetch(keys, as_list = False):
         out.append(dt)
     return out
 
-def init(fp):
-    conf = xf.loadxf(fp, as_args=True,spc=False)
+def init(fps, sys_conf={}):
+    confs = [xf.loadxf(fp, as_args=True,spc=False) for fp in fps]
+    if len(confs)>0:
+        conf = confs[0]
+    else:
+        conf = {}
+    for it in confs[1:]:
+        dz.deep_fill_argx(it, conf, 1)
+    dz.deep_fill_argx(sys_conf, conf, 1)
     if isinstance(conf, Args):
         conf = conf.dicts
     ks, vs, inits= dz.g(conf, keys=[], vars={}, init={})
@@ -86,19 +93,31 @@ class Orders(Base):
         return self.orders[key](*args, **maps)
 
 pass
-dp = os.path.dirname(__file__)
-fp = os.path.join(dp, 'conf', 'play.js')
-default_src = os.path.join(dp, 'res/FluidR3Mono_GM.sf2')
+from .base import default_src, conf_fp, path
 class Conf(Base):
-    def init(self, fp, sys_sfile):
+    def win_fix(self, libpath):
+        #print(f"[TESTZ] libpath: {libpath}")
+        if libpath is None:
+            return
+        import os
+        if hasattr(os, 'add_dll_directory'):  # Python 3.8+ on Windows only
+            os.add_dll_directory(libpath)
+            os.environ['PATH'] += f';{libpath}'
+    def init(self, fps, sys_conf={}):
         self.to_stops = set()
+        if type(fps) not in (list, tuple):
+            fps = [fps]
         #self.play = play
-        self.fp = fp
-        cmds, vs, inits = init(fp)
-        sfile, fps, select, sample_rate = dz.g(inits, sfile = default_src, fps=30, select={}, sample_rate=44100)
+        #print(f"[TESTZ] sys_conf: {sys_conf}")
+        self.fps = fps
+        cmds, vs, inits = init(fps, sys_conf)   
+        #print(f"[TESTZ] inits: {inits}")
+        sfile, fps, select, sample_rate, libpath = dz.g(inits, sfile = default_src, fps=30, select={}, sample_rate=44100, libpath=None)
+        sfile = path(sfile)
+        libpath = path(libpath)
+        self.win_fix(libpath)
         sfile = sfile or default_src
-        sfile = sys_sfile or sfile
-        if not os.path.isfile(sfile):
+        if sfile is None or not os.path.isfile(sfile):
             print(f"ERROR: sf2文件'{sfile}'不存在 / sf2 file '{sfile}' not exists")
             exit()
         play = playz.Play(sfile,fps=fps, sample_rate=sample_rate)
@@ -125,6 +144,10 @@ class Conf(Base):
         self.ks.stop()
         self.play.stop()
         self.play.close()
+    def stop(self,*a,**b):
+        for n in self.to_stops:
+            self.play.unpress(n, self.channel)
+        self.to_stops = set()
     def quit(self, *a, **b):
         self.running = False
         input("press enter to quit:\n")
@@ -146,20 +169,29 @@ class Conf(Base):
         self.vars[label][var] = val
     def mode(self, do_press, mode, **_):
         self.vars['mode'] = mode
+    def fix_power(self, n,power):
+        vmin = dz.dget(self.vars, 'soundfix.min'.split("."), 0)[0]
+        vmax = dz.dget(self.vars, 'soundfix.max'.split("."), 0)[0]
+        vdst = vmax-vmin
+        n = min(max(n, 36), 132)
+        rate = (n-36)/(132-36)
+        return int(power+vmin+vdst*rate)
     def sound(self, do_preess, label, sound, power=None, **_):
         vs = self.vars[label]
         n = vs['base']+sound
         if not do_preess:
             if self.vars['mode']==0:
                 self.play.unpress(n, self.channel)
-                self.to_stops.remove(n)
+                if n in self.to_stops:
+                    self.to_stops.remove(n)
             return
         if power is None:
             power = vs['power']
-        #print(f"play.press({n}, {power})")
         if n in self.to_stops:
             self.play.unpress(n, self.channel)
             self.to_stops.remove(n)
+        power = self.fix_power(n, power)
+        #print(f"play.press({n}, {power})")
         self.play.press(n, power, self.channel)
         self.to_stops.add(n)
     def press_callback(self, char, press):
@@ -171,22 +203,38 @@ class Conf(Base):
     def build_fc(self):
         self.orders = Orders()
         self.orders.set('press', self.press)
+        self.orders.set('stop', self.stop)
         self.orders.set('mode', self.mode)
         self.orders.set('quit', self.quit)
         self.orders.set('change', self.change)
         self.orders.set('sound', self.sound)
 
 
-
+from buildz import argx
+s_help = fz.fread(path("help.txt")).decode("utf-8")
 def test():
-    dp = os.path.dirname(__file__)
-    fp = os.path.join(dp, 'conf', 'play.js')
     import time,sys
-    argv = sys.argv[1:]
-    sfile = None
-    if len(argv)>0:
-        sfile = argv[0]
-    conf = Conf(fp, sfile)
+    ft = argx.Fetch(*xf.loads("[fp,sfile,libpath,default,help],{f:fp,s:sfile,d:libpath,t:default,h:help}"))
+    rst = ft(sys.argv[1:])
+    if 'help' in rst:
+        print(s_help)
+        return
+    fps = []
+    if 'fp' in rst:
+        fps.append(path(rst['fp']))
+        del rst['fp']
+    default = '1'
+    if 'default' in rst:
+        default = rst['default']
+        del rst['default']
+    if default in (0,'0'):
+        default = None
+    elif default in (1,'1'):
+        default = conf_fp
+    if default:
+        fps = [path(default)]+fps
+    sys_conf = {'init':rst}
+    conf = Conf(fps, sys_conf)
     conf.start()
     print("run success, enter '~' to quit")
     print("运行中,按下'~'键来退出")
@@ -197,3 +245,6 @@ def test():
 pass
 
 pyz.lc(locals(), test)
+'''
+python -m key_musicz.run -dD:\rootz\python\gits\key_musicz\lib
+'''
