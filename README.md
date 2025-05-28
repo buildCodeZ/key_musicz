@@ -43,7 +43,7 @@ buildz:
         [-l/--libpath=]windows下fluidsynth库的bin的路径
         [-h/--help]
     例：
-        python -m key_musicz.run -s./FluidR3Mono_GM.sf2 -tplayrb.js
+        python -m key_musicz.run -s./FluidR3Mono_GM.sf2 -l./lib -tplayrb.js
     默认配置文件（key_music/conf目录下）：
         通用配置：
             按住shift+主键盘的数字键盘调整基调，~退出，空格切音

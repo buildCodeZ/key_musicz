@@ -1,10 +1,10 @@
 vars: {
     left: {
-        base: 36 // 0-127
+        base: 48 // 0-127
         power: 90 // 0-127
     }
     right: {
-        base: 60
+        base: 72
         power: 90
     }
     soundfix: {

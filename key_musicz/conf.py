@@ -96,7 +96,7 @@ pass
 from .base import default_src, conf_fp, path
 class Conf(Base):
     def win_fix(self, libpath):
-        #print(f"[TESTZ] libpath: {libpath}")
+        print(f"[TESTZ] libpath: {libpath}")
         if libpath is None:
             return
         import os
@@ -214,7 +214,7 @@ from buildz import argx
 s_help = fz.fread(path("help.txt")).decode("utf-8")
 def test():
     import time,sys
-    ft = argx.Fetch(*xf.loads("[fp,sfile,libpath,default,help],{f:fp,s:sfile,d:libpath,t:default,h:help}"))
+    ft = argx.Fetch(*xf.loads("[fp,sfile,libpath,default,help],{f:fp,s:sfile,l:libpath,t:default,h:help}"))
     rst = ft(sys.argv[1:])
     if 'help' in rst:
         print(s_help)
