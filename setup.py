@@ -19,5 +19,5 @@ setup(
     packages = find_packages(),
     include_package_data = True,
     platforms = 'any',
-    install_requires = ['pynput', 'numpy', 'PyAudio','buildz','pyfluidsynth'],
+    install_requires = ['pynput', 'numpy', 'PyAudio','buildz>=0.8.6','pyfluidsynth'],
 )

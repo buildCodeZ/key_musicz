@@ -96,7 +96,7 @@ pass
 from .base import default_src, conf_fp, path
 class Conf(Base):
     def win_fix(self, libpath):
-        print(f"[TESTZ] libpath: {libpath}")
+        #print(f"[TESTZ] libpath: {libpath}")
         if libpath is None:
             return
         import os

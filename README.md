@@ -4,10 +4,18 @@
 declaration:
 Codes of this project are not allowed to be used for AI training or any other form of machine learning processes.
 
-许可证从之前的项目拷贝的Appache许可证，后面有空找个MIT的换下
-
 ```
 键盘按键弹钢琴的小程序
+(
+注：
+    另外写了个key_musicz_res库，里面包含了sf2格式音频文件和windows下的64位的fluidsynth库，下载后不用再自己下载音频文件和在windows装fluidsynth，key_musicz_res本质上是引用的本项目的代码
+    安装:
+        pip install key_musicz_res
+        安装key_musicz_res会自动安装本项目以及本项目依赖的python库
+    运行:
+        python -m key_musicz_res [可选参数]
+    可选参数和本项目一样，不过加了默认值，可以不用写
+)
 需要以下C库或资源文件:
     fluidsynth: 读sf2音频文件（里面是各种乐器的按键音），根据指定按键生成音频数据
     FluidR3_GM.sf2: 免费的sf2音频文件，当然你也可以用其他的
@@ -26,13 +34,17 @@ fluidsynth:
         https://github.com/FluidSynth/fluidsynth/releases
         windows下是压缩包，解压后要把解压路径/bin加到PATH中，注意github时不时会连不上，可以试试镜像加速之类的
 
+FluidR3_GM.sf2音频文件下载：
+    有个国内地址，是csdn的gitcode.com里的，要登录但不收费：
+        https://gitcode.com/open-source-toolkit/1d145/?utm_source=tools_gitcode&index=top&type=card&
+    文件大小一百多MB
 
 pyfluidsynth:
 pyaudio:
 pynput:
 buildz:
-    安装本库的时候自动安装，其中linux下的pyaudio可能会报错，需要先手动安装portaudio
     pip install key_musicz
+    安装本库的时候自动安装，其中linux下的pyaudio可能会报错，需要先手动安装portaudio
 
 程序运行:
     python -m key_musicz.run 参数
