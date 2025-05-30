@@ -4,7 +4,7 @@ import numpy as np
 from buildz import Base
 class Source(Base):
     def init(self, source, sample_rate = 44100):
-        import fluidsynth
+        from .thirdpart.pyfluidsynth import fluidsynth
         #print(f"sample_rate:", sample_rate)
         self.fs = fluidsynth.Synth()
         self.source = source

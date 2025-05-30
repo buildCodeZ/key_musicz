@@ -175,6 +175,7 @@ class Conf(Base):
         vdst = vmax-vmin
         n = min(max(n, 36), 132)
         rate = (n-36)/(132-36)
+        #rate=rate*rate
         return int(power+vmin+vdst*rate)
     def sound(self, do_preess, label, sound, power=None, **_):
         vs = self.vars[label]

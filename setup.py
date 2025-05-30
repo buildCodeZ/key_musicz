@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'key_musicz',
-    version = '0.1.6',
+    version = '0.1.8',
     keywords='key_musicz',
     long_description=open('README.md', 'r', encoding="utf-8").read(),
     long_description_content_type='text/markdown',
