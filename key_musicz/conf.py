@@ -50,6 +50,17 @@ def fetch(keys, as_list = False):
         dt.update(it)
         out.append(dt)
     return out
+def fetch_cmds(ks):
+    #print(f"fetch_cmds: {ks}")
+    if isinstance(ks, Args):
+        ks = ks.as_list(cmb=0, item_args = False, deep=True)
+    cmds = []
+    for it in ks:
+        cs = fetch(it)
+        if type(cs) == dict:
+            cs = [cs]
+        cmds+=cs
+    return cmds
 
 def init(fps, sys_conf={}):
     confs = [xf.loadxf(fp, as_args=True,spc=False) for fp in fps]
@@ -62,23 +73,26 @@ def init(fps, sys_conf={}):
     dz.deep_fill_argx(sys_conf, conf, 1)
     if isinstance(conf, Args):
         conf = conf.dicts
-    ks, vs, inits= dz.g(conf, keys=[], vars={}, init={})
-    if isinstance(ks, Args):
-        ks = ks.as_list(cmb=0, item_args = False, deep=True)
+    ks, vs, inits, trs= dz.g(conf, keys=[], vars={}, init={}, transforms={})
+    # if isinstance(ks, Args):
+    #     ks = ks.as_list(cmb=0, item_args = False, deep=True)
     if isinstance(vs, Args):
         vs = vs.as_dict(True)
     if isinstance(inits, Args):
         inits = inits.as_dict(True)
-    cmds = []
-    for it in ks:
-        cs = fetch(it)
-        if type(cs) == dict:
-            cs = [cs]
-        cmds+=cs
+    if isinstance(trs, Args):
+        trs = trs.as_dict(True)
+    # cmds = []
+    # for it in ks:
+    #     cs = fetch(it)
+    #     if type(cs) == dict:
+    #         cs = [cs]
+    #     cmds+=cs
+    cmds = fetch_cmds(ks)
     # print("orders:", cmds)
     # print("vars:", vs)
     # print("init:", inits)
-    return cmds, vs, inits
+    return cmds, vs, inits, trs
 
 pass
 class Orders(Base):
@@ -110,7 +124,7 @@ class Conf(Base):
         #self.play = play
         #print(f"[TESTZ] sys_conf: {sys_conf}")
         self.fps = fps
-        cmds, vs, inits = init(fps, sys_conf)   
+        cmds, vs, inits, trs = init(fps, sys_conf)   
         #print(f"[TESTZ] inits: {inits}")
         sfile, fps, select, sample_rate, libpath = dz.g(inits, sfile = default_src, fps=30, select={}, sample_rate=44100, libpath=None)
         sfile = path(sfile)
@@ -128,10 +142,11 @@ class Conf(Base):
         self.ks = keyz.Keys(self.press_callback)
         self.vars = vs
         self.baks = {}
+        self.trs = trs
         rst = {}
         for cmd in cmds:
             key = str(cmd['key'])
-            rst[key] = cmd
+            rst[key] = [cmd]
         self.keys = rst
         #print(f"keys:", list(self.keys.keys()))
         self.build_fc()
@@ -163,6 +178,18 @@ class Conf(Base):
         else:
             bak = self.baks[label][var]
             self.vars[label][var] = bak
+    def move_base(self, do_press, label, var, val, **_):
+        if do_press:
+            #bak = self.vars[label][var]
+            #dz.dset(self.baks, [label, var], bak)
+            #print(f"before press self.vars[{label}][{var}]: {self.vars[label][var]}")
+            self.vars[label][var] += val
+            #print(f"after press self.vars[{label}][{var}]: {self.vars[label][var]}")
+        else:
+            #print(f"before unpress self.vars[{label}][{var}]: {self.vars[label][var]}")
+            self.vars[label][var] -= val
+            #print(f"after unpress self.vars[{label}][{var}]: {self.vars[label][var]}")
+        pass
     def change(self, do_press, label, var, val, **_):
         if not do_press:
             return
@@ -177,10 +204,34 @@ class Conf(Base):
         rate = (n-36)/(132-36)
         #rate=rate*rate
         return int(power+vmin+vdst*rate)
-    def sound(self, do_preess, label, sound, power=None, **_):
+    def change_mode(self, do_press, *a, **b):
+        #print(f"call change_mode: {do_press}, {a}, {b}")
+        if not do_press:
+            return
+        self.vars['mode'] = 1-self.vars['mode']
+        print(f"mode: {self.vars['mode']}")
+    def push_conf(self, do_press, conf, **_):
+        conf = xf.loadx(conf, as_args=True,spc=False)
+        #print(f"conf: {conf}")
+        cmds = fetch_cmds(conf)
+        #print(f"cmds: {cmds}")
+        #print(f"press push_conf: {do_press}")
+        #return
+        keys = self.keys
+        for cmd in cmds:
+            key = str(cmd['key'])
+            if key not in keys:
+                keys[key] = []
+            #print(f"key: {key}, keys: {keys[key]}")
+            #continue
+            if do_press:
+                keys[key].append(cmd)
+            else:
+                keys[key].pop(-1)
+    def sound(self, do_press, label, sound, power=None, **_):
         vs = self.vars[label]
         n = vs['base']+sound
-        if not do_preess:
+        if not do_press:
             if self.vars['mode']==0:
                 self.play.unpress(n, self.channel)
                 if n in self.to_stops:
@@ -197,9 +248,12 @@ class Conf(Base):
         self.to_stops.add(n)
     def press_callback(self, char, press):
         #print(f"press:", char, press)
+        if char in self.trs:
+            char = str(self.trs[char])
+        #print(f"press1:", char, press)
         if char not in self.keys:
             return
-        maps = self.keys[char]
+        maps = self.keys[char][-1]
         self.orders(maps, press)
     def build_fc(self):
         self.orders = Orders()
@@ -209,6 +263,9 @@ class Conf(Base):
         self.orders.set('quit', self.quit)
         self.orders.set('change', self.change)
         self.orders.set('sound', self.sound)
+        self.orders.set('push_conf', self.push_conf)
+        self.orders.set('change_mode', self.change_mode)
+        self.orders.set('move_base', self.move_base)
 
 
 from buildz import argx
