@@ -1,16 +1,16 @@
 vars: {
     left: {
         base: 48 // 0-127
-        power: 90 // 0-127
+        power: 120 // 0-127
     }
     right: {
         base: 72
-        power: 90
+        power: 120
     }
     soundfix: {
         // 按键音声音大小调整，相同声音大小下，低音听起来声音更大，引入修改量，低音到高音对应 min到max
-        min: -15
-        max: 60
+        min: -30
+        max: 10
     }
     mode: 1 //按键模式，1是按键松开后继续播放按键声音，0是松开后立刻停止按键声音
 }
@@ -24,6 +24,10 @@ init: {
     sfile: null // sf2音频文件路径，本地测试用的FluidR3Mono_GM.sf2（不知道和FluidR3_GM.sf2有什么不同，反正都是网上下的免费资源）
     libpath: null //fluidsynth库路径，在windows下没有在PATH配置fluidsynth路径时使用
     fps: 30 // 按键监听fps
+}
+save: {
+    filepath: "%Y%m%d%H%M%S.wav"
+    work: true
 }
 transforms: {
     '!':1,'@':2,'#':3,'$':4,'%':5,'^':6,'&':7,'*':8,'(':9,')':10,'_':'-','+':'='

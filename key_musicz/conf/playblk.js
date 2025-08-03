@@ -25,6 +25,10 @@ init: {
     libpath: null //fluidsynth库路径，在windows下没有在PATH配置fluidsynth路径时使用
     fps: 30 // 按键监听fps
 }
+save: {
+    filepath: "%Y%m%d%H%M%S.wav"
+    work: true
+}
 keys: {
     // 左右shift实际没用，后续改改
     (

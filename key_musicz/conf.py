@@ -73,7 +73,7 @@ def init(fps, sys_conf={}):
     dz.deep_fill_argx(sys_conf, conf, 1)
     if isinstance(conf, Args):
         conf = conf.dicts
-    ks, vs, inits, trs= dz.g(conf, keys=[], vars={}, init={}, transforms={})
+    ks, vs, inits, trs, save= dz.g(conf, keys=[], vars={}, init={}, transforms={}, save = {})
     # if isinstance(ks, Args):
     #     ks = ks.as_list(cmb=0, item_args = False, deep=True)
     if isinstance(vs, Args):
@@ -82,6 +82,8 @@ def init(fps, sys_conf={}):
         inits = inits.as_dict(True)
     if isinstance(trs, Args):
         trs = trs.as_dict(True)
+    if isinstance(save, Args):
+        save = save.as_dict(True)
     # cmds = []
     # for it in ks:
     #     cs = fetch(it)
@@ -92,7 +94,7 @@ def init(fps, sys_conf={}):
     # print("orders:", cmds)
     # print("vars:", vs)
     # print("init:", inits)
-    return cmds, vs, inits, trs
+    return cmds, vs, inits, trs, save
 
 pass
 class Orders(Base):
@@ -124,7 +126,7 @@ class Conf(Base):
         #self.play = play
         #print(f"[TESTZ] sys_conf: {sys_conf}")
         self.fps = fps
-        cmds, vs, inits, trs = init(fps, sys_conf)   
+        cmds, vs, inits, trs, saves = init(fps, sys_conf)   
         #print(f"[TESTZ] inits: {inits}")
         sfile, fps, select, sample_rate, libpath = dz.g(inits, sfile = default_src, fps=30, select={}, sample_rate=44100, libpath=None)
         sfile = path(sfile)
@@ -143,6 +145,9 @@ class Conf(Base):
         self.vars = vs
         self.baks = {}
         self.trs = trs
+        self.save_fp = None
+        if dz.g(saves, work=0):
+            self.save_fp = dz.g(saves, filepath="%Y%m%d%H%M%S.wav")
         rst = {}
         for cmd in cmds:
             key = str(cmd['key'])
@@ -158,7 +163,7 @@ class Conf(Base):
     def close(self):
         self.ks.stop()
         self.play.stop()
-        self.play.close()
+        self.play.close(self.save_fp)
     def stop(self,*a,**b):
         for n in self.to_stops:
             self.play.unpress(n, self.channel)
@@ -203,7 +208,9 @@ class Conf(Base):
         n = min(max(n, 36), 132)
         rate = (n-36)/(132-36)
         #rate=rate*rate
-        return int(power+vmin+vdst*rate)
+        v = int(power+vmin+vdst*rate)
+        #print(f"sound for {n}: {v}")
+        return v
     def change_mode(self, do_press, *a, **b):
         #print(f"call change_mode: {do_press}, {a}, {b}")
         if not do_press:

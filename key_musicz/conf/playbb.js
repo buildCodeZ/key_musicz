@@ -14,6 +14,10 @@ vars: {
     }
     mode: 1 //按键模式，1是按键松开后继续播放按键声音，0是松开后立刻停止按键声音
 }
+save: {
+    filepath: "%Y%m%d%H%M%S.wav"
+    work: true
+}
 init: {
     select: {
         channel: 0 // MIDI通道号（0-15），9号通道通常预留给打击乐, 0是钢琴

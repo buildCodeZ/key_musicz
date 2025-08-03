@@ -13,7 +13,9 @@ class Source(Base):
         self.do_select=False
     def get(self, sz=None):
         sz = sz or self.sample_rate
-        return self.fs.get_samples(sz)
+        rst = self.fs.get_samples(sz)
+        #print(f"get:", rst, rst.max(), np.abs(rst).max())
+        return rst
     def read(self, sec=1.0):
         sz = int(self.sample_rate*sec)
         return self.get(sz)
