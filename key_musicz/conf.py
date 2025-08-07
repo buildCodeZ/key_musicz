@@ -1,7 +1,7 @@
 #
 from buildz import xf, fz, pyz, dz, Args, Base
-import os
-from . import playz, keyz
+import os,threading
+from . import playz, keyz, fmt
 def fetch(keys, as_list = False):
     if type(keys) not in (list,tuple):
         #print(f"return not list", keys, as_list)
@@ -126,9 +126,10 @@ class Conf(Base):
         #self.play = play
         #print(f"[TESTZ] sys_conf: {sys_conf}")
         self.fps = fps
+        self.lock = threading.Lock()
         cmds, vs, inits, trs, saves = init(fps, sys_conf)   
         #print(f"[TESTZ] inits: {inits}")
-        sfile, fps, select, sample_rate, libpath = dz.g(inits, sfile = default_src, fps=30, select={}, sample_rate=44100, libpath=None)
+        sfile, fps, select, sample_rate, libpath, background = dz.g(inits, sfile = default_src, fps=30, select={}, sample_rate=44100, libpath=None, background = {})
         sfile = path(sfile)
         libpath = path(libpath)
         self.win_fix(libpath)
@@ -136,10 +137,12 @@ class Conf(Base):
         if sfile is None or not os.path.isfile(sfile):
             print(f"ERROR: sf2文件'{sfile}'不存在 / sf2 file '{sfile}' not exists")
             exit()
+        background = fmt.FileRead(background, self)
         play = playz.Play(sfile,fps=fps, sample_rate=sample_rate)
         play.select(**select)
         channel = dz.g(select, channel= 0)
         self.channel= channel
+        self.background = background
         self.play = play
         self.ks = keyz.Keys(self.press_callback)
         self.vars = vs
@@ -160,7 +163,9 @@ class Conf(Base):
         self.running = True
         self.play.start()
         self.ks.start()
+        self.background.start()
     def close(self):
+        self.background.stop()
         self.ks.stop()
         self.play.stop()
         self.play.close(self.save_fp)
@@ -235,17 +240,35 @@ class Conf(Base):
                 keys[key].append(cmd)
             else:
                 keys[key].pop(-1)
+    def dv_sound(self, do_press, n, power, **_):
+        if not do_press:
+            if self.vars['mode']==0:
+                self.play.unpress(n, self.channel)
+                with self.lock:
+                    if n in self.to_stops:
+                        self.to_stops.remove(n)
+            return
+        # with self.lock:
+        #     if n in self.to_stops:
+        #         self.play.unpress(n, self.channel)
+        #         self.to_stops.remove(n)
+        power = self.fix_power(n, power)
+        #print(f"play.press({n}, {power})")
+        self.play.press(n, power, self.channel)
+        with self.lock:
+            self.to_stops.add(n)
     def sound(self, do_press, label, sound, power=None, **_):
         vs = self.vars[label]
         n = vs['base']+sound
+        if power is None:
+            power = vs['power']
+        return self.dv_sound(do_press, n, power, **_)
         if not do_press:
             if self.vars['mode']==0:
                 self.play.unpress(n, self.channel)
                 if n in self.to_stops:
                     self.to_stops.remove(n)
             return
-        if power is None:
-            power = vs['power']
         if n in self.to_stops:
             self.play.unpress(n, self.channel)
             self.to_stops.remove(n)
@@ -279,7 +302,7 @@ from buildz import argx
 s_help = fz.fread(path("help.txt")).decode("utf-8")
 def test():
     import time,sys
-    ft = argx.Fetch(*xf.loads("[fp,sfile,libpath,default,help],{f:fp,s:sfile,l:libpath,t:default,h:help}"))
+    ft = argx.Fetch(*xf.loads("[fp,sfile,libpath,default,help],{f:fp,s:sfile,l:libpath,t:default,b:background,h:help}"))
     rst = ft(sys.argv[1:])
     if 'help' in rst:
         print(s_help)
@@ -292,6 +315,11 @@ def test():
     if 'default' in rst:
         default = rst['default']
         del rst['default']
+    if 'background' in rst:
+        background = rst['background']
+        del rst['background']
+        background = {'fp':background}
+        rst['background'] = background
     if default in (0,'0'):
         default = None
     elif default in (1,'1'):

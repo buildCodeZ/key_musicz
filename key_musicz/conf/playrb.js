@@ -9,12 +9,32 @@ vars: {
     }
     soundfix: {
         // 按键音声音大小调整，相同声音大小下，低音听起来声音更大，引入修改量，低音到高音对应 min到max
-        min: -30
+        min: -55
         max: 10
     }
     mode: 1 //按键模式，1是按键松开后继续播放按键声音，0是松开后立刻停止按键声音
 }
 init: {
+    // 背景音乐
+    background: {
+        // 背景音默认音量
+        power: 100
+        // 几个单独的弹奏
+        channels: 1
+        // 如果有多个弹奏，每多少节放到一个弹奏里，轮流放
+        channel_unit: 4
+        // 按键1的音调
+        base: 72
+        // 背景乐谱文件，没有则不会有背景音
+        fp: null
+        // fp: r"D:\rootz\python\gits\key_musicz_upd\key_musicz\conf\kl.js"
+        // 1节的时长
+        sec: 2
+        // 背景音乐循环
+        loop: true
+        // 背景音乐结束后运行结束
+        stop: true
+    }
     select: {
         channel: 0 // MIDI通道号（0-15），9号通道通常预留给打击乐, 0是钢琴
         bank: 0 //音色库编号（0-16383），GM标准中0为常规乐器，128为打击乐
